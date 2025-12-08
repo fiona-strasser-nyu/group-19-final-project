@@ -56,17 +56,60 @@ class KidsRAG:
     return passages
 
   def chunk_data(self, text):
-    # split on multiple newlines
-    story_blocks = [b.strip() for b in re.split(r'\n{2,}', text) if len(b.strip())>50]
+    # adapted from ada's milestone 3 file:
+    # split text data
+    sections = text.split("\n\n")
+    
+    titles = []
+    stories = []
+    current_title = None
+    current_story = []
+    
+    for section in sections:
+      section = section.strip()
+      if not section:
+        continue
+      
+      lines = section.splitlines()
+      first_line = lines[0].strip()
+      
+      is_title = False
+      
+      if first_line.isupper():
+          is_title = True
+      
+      elif len(first_line) < 50 and first_line.endswith('.'):
+          is_title = True
+      
+      if is_title == True:
+        first_line = first_line.strip('".!?') # for punctuation  
+        first_line_normalized = re.sub(r"[^a-z0-9 ]","", first_line.lower())
+        
+        if current_title and current_story:
+            stories.append(' '.join(current_story))
+            titles.append(current_title)
+        
+        current_title = first_line_normalized
+        current_story = lines[1:] if len(lines) > 1 else []
+      
+      else:
+          current_story.extend(lines)
+    
+    # add last story to list of stories
+    if current_title and current_story:
+      stories.append(' '.join(current_story))
+      titles.append(current_title)
+      
+    passages = []
+    for x in range(len(stories)):
+        title = titles[x].strip() # for whitespace
+        chunks = self._passage_text(stories[x])
+        
+        for i, passage in enumerate(chunks):
+            passages.append({"title":title,
+                "passage": passage})
 
-    rows = []
-    for si, block in enumerate(story_blocks):
-      title = f"story_{si}"
-      passages = self._passage_text(block)
-      for j, c in enumerate(passages):
-        rows.append({"story_id": si, "title": title, "passage_id": f"{si}_{j}", "passage": c})
-
-    passages_df = pd.DataFrame(rows)
+    passages_df = pd.DataFrame(passages)
 
     return passages_df
 
