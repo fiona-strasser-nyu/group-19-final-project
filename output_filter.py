@@ -246,6 +246,18 @@ class OutputFilter:
         return result
     
     def is_output_safe(self, text: str) -> bool:
+       """
+       Evaluate whether output text is overall safe or not by considering
+       results of filter method above. Overall safety is determined by if
+       the input is above toxic threshold, has any prohibited topics, or is
+       above a 12th grade readability level.
+        
+        Args:
+            text (str): Model output text to filter
+            
+        Returns:
+            bool: False if any measure of safety has failed, True if all pass
+        """
         result = self.filter(text)
 
         # if any safety flag triggers mark it as unsafe
