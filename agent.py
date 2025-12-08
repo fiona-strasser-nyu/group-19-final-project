@@ -78,7 +78,7 @@ class LibrAIrianAgent:
     graph_builder.add_edge("retrieve_passages_node", "filter_retrieved_passages")
     graph_builder.add_conditional_edges("filter_retrieved_passages", 
     lambda state: "unsafe" if state.get("unsafe") else "safe",
-    {"unsafe":END,"safe":"generate_response"}))
+    {"unsafe":END,"safe":"generate_response"})
     graph_builder.add_edge("generate_response", "check_answer_safety")
     graph_builder.add_edge("check_answer_safety", END)
 
