@@ -11,6 +11,7 @@ from langgraph.graph import StateGraph, END
 from langgraph.prebuilt import ToolNode, tools_condition
 import pandas as pd
 from typing import Dict, List, Set, Tuple
+import re
 
 # in recitation, we saw an example with Messages State,
 # but that does not suit the specific needs of our project
@@ -66,7 +67,9 @@ class LibrAIrianAgent:
     # add edges between subsequent pieces of the pipeline
     graph_builder.set_entry_point("get_story_title")
     graph_builder.add_edge("get_story_title","get_user_input")
-    graph_builder.add_edge("get_user_input", "check_input_safety")
+    graph_builder.add_conditional_edges("get_user_input", 
+    lambda state: "quit" if state.get("quit") else "continue",
+    {"quit":END,"continue":"check_input_safety"})
     graph_builder.add_conditional_edges("check_input_safety",
     lambda state: "unsafe" if state.get("unsafe") else "safe",
     {"unsafe":END,"safe":"check_exchange_count"})
@@ -80,14 +83,23 @@ class LibrAIrianAgent:
 
   # get user title
   def get_story_title(self, state: ChildMessagesState):
-    user_story_title = state['story_title']
+    user_story_title = state['story_title'].strip()
+    story_title_text = user_story_title.strip('".!?')
+    normalized_title = re.sub(r"[^a-z0-9 ]", "", story_title_text.lower())
 
-    return {"story_title":user_story_title}
+    return {"story_title":normalized_title}
 
   # get user input
 
   def get_user_input(self, state: ChildMessagesState):
-    user_input = state['user_query']
+    user_input = state['user_query'].strip().lower()
+    
+    if user_input == "quit":
+        final_output = "Goodbye! Talk to you soon."
+        
+        message_history = state['messages'] + [{"role": "assistant", "content": final_output}]
+        
+        return {"final_output":final_output,"messages":message_history,"quit":True}
 
     # add one to the turn count
     state['turn_count'] += 1
@@ -124,7 +136,7 @@ class LibrAIrianAgent:
 
     user_story_title = state['story_title']
 
-    if user_story_title.strip().lower() == "general":
+    if user_story_title == "general":
       return {"query_type":2}
 
     if user_story_title in self.rag.passages_df['title'].unique():
