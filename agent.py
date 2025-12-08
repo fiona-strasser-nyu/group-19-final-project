@@ -76,7 +76,9 @@ class LibrAIrianAgent:
     graph_builder.add_edge("check_exchange_count", "check_query_type")
     graph_builder.add_edge("check_query_type", "retrieve_passages_node")
     graph_builder.add_edge("retrieve_passages_node", "filter_retrieved_passages")
-    graph_builder.add_edge("filter_retrieved_passages", "generate_response")
+    graph_builder.add_conditional_edges("filter_retrieved_passages", 
+    lambda state: "unsafe" if state.get("unsafe") else "safe",
+    {"unsafe":END,"safe":"generate_response"}))
     graph_builder.add_edge("generate_response", "check_answer_safety")
     graph_builder.add_edge("check_answer_safety", END)
 
@@ -181,8 +183,19 @@ class LibrAIrianAgent:
   
   def filter_retrieved_passages(self, state: ChildMessagesState):
     filtered = self.rag.filter_passages(state['retrieve_passages'])
+    if filtered.empty == True:
+        final_output = "I'm sorry, the passages I found to answer that question were not safe. Please try a different question."
+        
+        state['retrieve_passages'] = filtered
+        
+        # add this to message history for system
+        message_history = state['messages'] + [{"role": "assistant", "content": final_output}]
+        state['final_output'] = final_output
+        
+        return {"final_output":final_output, "messages":message_history, 'unsafe':True}
+        
     state['retrieve_passages'] = filtered
-    return {'retrieve_passages': filtered}
+    return {'retrieve_passages': filtered, "unsafe":False}
 
   # generate response
 
@@ -231,7 +244,7 @@ class LibrAIrianAgent:
         final_output = state['response']
         # add to message history
         message_history = state['messages'] + [{"role": "assistant", "content": final_output}]
-        return {"final_output":final_output, "messages":message_history}
+        return {"final_output":final_output, "messages":message_history, "unsafe":False}
 
       # output safety check from Mia's safety filtering layer
       else:
@@ -270,7 +283,7 @@ class LibrAIrianAgent:
     message_history = state['messages'] + [{"role": "assistant", "content": final_output}]
     state['final_output'] = final_output
     
-    return {"final_output":final_output, "messages":message_history}
+    return {"final_output":final_output, "messages":message_history, "unsafe":True}
 
   def run(self, user_query):
     # initialize state object
