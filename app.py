@@ -1,4 +1,3 @@
-
 import streamlit as st
 from input_filter import InputFilter
 from output_filter import OutputFilter
@@ -102,13 +101,13 @@ story_title = st.text_input(
     st.session_state.story_title
 )
 
-st.session_state.story_title = story_title.strip()
+st.session_state.story_title = story_title
 
 def ask_question():
   user_query = st.session_state.input_box
 
   state = ChildMessagesState(
-        story_title = story_title.strip(),
+        story_title = story_title,
         user_query = user_query,
         query_type = 2,
         messages=st.session_state.messages.copy(),
@@ -136,9 +135,9 @@ for msg in st.session_state.messages:
   if msg["role"] == 'user':
     st.markdown(f"""
       <div style="
-          background-color:#DCF8C6; 
-          padding:10px; 
-          border-radius:10px; 
+          background-color:#DCF8C6;
+          padding:10px;
+          border-radius:10px;
           text-align:right;
           margin: 5px;
           display:inline-block;
@@ -150,9 +149,9 @@ for msg in st.session_state.messages:
   else:
     st.markdown(f"""
         <div style="
-            background-color:#FFFFFF; 
-            padding:10px; 
-            border-radius:10px; 
+            background-color:#FFFFFF;
+            padding:10px;
+            border-radius:10px;
             text-align:left;
             margin: 5px;
             display:inline-block;
@@ -163,5 +162,3 @@ for msg in st.session_state.messages:
         </div>
         """,
         unsafe_allow_html=True)
-
-# st.text_input("answer['final_output'])
