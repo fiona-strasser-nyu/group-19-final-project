@@ -40,6 +40,10 @@ class ChildMessagesState(TypedDict):
     # counts how many questions have been asked
     # limit 10 to limit screen time
     turn_count: int
+    # bool marker of if need to exit for safety
+    unsafe: bool | None
+    # bool marker of if user chooses to exit
+    quit: bool | None
 
 class LibrAIrianAgent:
   def __init__(self, rag, llm, input_filter, output_filter, max_turns=10):

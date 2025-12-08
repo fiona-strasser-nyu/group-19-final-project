@@ -1,5 +1,3 @@
-%%writefile app.py
-
 import streamlit as st
 from input_filter import InputFilter
 from output_filter import OutputFilter

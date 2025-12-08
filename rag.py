@@ -23,7 +23,8 @@ class KidsRAG:
                passage_size,
                embed_batch_size=128,
                model_name="all-MiniLM-L6-v2",
-               output_dir="./output_data"):
+               output_dir="./output_data",
+               datacard_titles_path=None):
 
     self.data_path = Path(data_path)
     self.passage_size = passage_size
@@ -39,11 +40,31 @@ class KidsRAG:
 
     self.passages_df = None
     self.embeddings = None
+    
+    self.approved_titles = self.load_approved_titles(datacard_titles_path)
 
   def load_data(self):
     # try to split into candidate stories
     with open(self.data_path, "r", encoding="utf-8", errors="replace") as fh:
       return fh.read()
+      
+  def load_approved_titles(self, path):
+    if path is None:
+        return None
+    
+    data_path = Path(path)
+    
+    text = data_path.read_text(encoding="utf-8")
+    titles = [line.strip() for line in text.splitlines() if line.strip()]
+    
+    titles_normalized = []
+    for title in titles:
+        title_text = title.strip('".!?') # for punctuation  
+        title_normalized = re.sub(r"[^a-z0-9 ]","", title_text.lower())
+        titles_normalized.append(title_normalized)
+    
+    return set(titles_normalized)
+    
 
   def _passage_text(self, text):
     words = text.split()
@@ -74,18 +95,27 @@ class KidsRAG:
       lines = section.splitlines()
       first_line = lines[0].strip()
       
-      is_title = False
+      title_candidate = False
       
       if first_line.isupper():
-          is_title = True
+          title_candidate = True
       
       elif len(first_line) < 50 and first_line.endswith('.'):
-          is_title = True
+          title_candidate = True
       
-      if is_title == True:
-        first_line = first_line.strip('".!?') # for punctuation  
-        first_line_normalized = re.sub(r"[^a-z0-9 ]","", first_line.lower())
-        
+      first_line = first_line.strip('".!?') # for punctuation  
+      first_line_normalized = re.sub(r"[^a-z0-9 ]","", first_line.lower())
+      
+      approved_title = False
+      if first_line_normalized in self.approved_titles:
+          approved_title = True
+      
+      if title_candidate and (approved_title==True or self.approved_titles is None):
+        is_title = True
+      else:
+        is_title = False
+    
+      if is_title == True:    
         if current_title and current_story:
             stories.append(' '.join(current_story))
             titles.append(current_title)
