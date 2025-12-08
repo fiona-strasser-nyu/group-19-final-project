@@ -40,6 +40,10 @@ class ChildMessagesState(TypedDict):
     # counts how many questions have been asked
     # limit 10 to limit screen time
     turn_count: int
+    # bool marker of if need to exit for safety
+    unsafe: bool | None
+    # bool marker of if user chooses to exit
+    quit: bool | None
 
 class LibrAIrianAgent:
   def __init__(self, rag, llm, input_filter, output_filter, max_turns=10):
@@ -78,7 +82,7 @@ class LibrAIrianAgent:
     graph_builder.add_edge("retrieve_passages_node", "filter_retrieved_passages")
     graph_builder.add_conditional_edges("filter_retrieved_passages", 
     lambda state: "unsafe" if state.get("unsafe") else "safe",
-    {"unsafe":END,"safe":"generate_response"}))
+    {"unsafe":END,"safe":"generate_response"})
     graph_builder.add_edge("generate_response", "check_answer_safety")
     graph_builder.add_edge("check_answer_safety", END)
 
