@@ -1,3 +1,5 @@
+%%writefile app.py
+
 import streamlit as st
 from input_filter import InputFilter
 from output_filter import OutputFilter
@@ -8,6 +10,20 @@ import os
 from pathlib import Path
 
 st.title("LibAIrian Resource Center")
+
+st.markdown("""
+Welcome to the Project LibrAIrian library! We want to help you better understand 
+and think about the stories you read, while having fun and staying safe. 
+
+Your "librarian" is a virtual assistant with lots of knowledge about stories through
+all the time they've spent looking and training on fairy tales.
+
+You can ask a question about one of those stories, a different story, or a general
+question. Just say what you're wondering about! To see what stories we have specific
+knowledge about, take a look at the sidebar.
+
+Have fun! Keep reading!
+""")
 
 api_key = os.getenv("OPENAI_API_KEY")
 if not api_key:
@@ -45,6 +61,14 @@ if not rag_loaded:
 
 if rag_loaded == False:
   st.stop()
+
+with st.sidebar:
+  st.header("Reference Texts in this Library")
+
+  if hasattr(rag, "passages_df") and rag.passages_df is not None:
+    titles = sorted(rag.passages_df['title'].unique())
+    for title in titles:
+      st.markdown(title)
 
 @st.cache_resource(show_spinner=True)
 def load_input_filter():
@@ -162,3 +186,5 @@ for msg in st.session_state.messages:
         </div>
         """,
         unsafe_allow_html=True)
+
+# st.text_input("answer['final_output'])
