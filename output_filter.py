@@ -244,7 +244,19 @@ class OutputFilter:
         result['difficult_words'] = list(self.check_vocabulary(text))
         
         return result
+    
+    def is_output_safe(self, text: str) -> bool:
+        result = self.filter(text)
 
+        # if any safety flag triggers mark it as unsafe
+        if result["is_toxic"]:
+            return False
+        if result["has_prohibited_topics"]:
+            return False
+        if result["readability"] > 12:
+            return False
+    
+        return True
 
 def filter_output(
     text: str, 
@@ -273,4 +285,3 @@ def filter_output(
         dale_chall_file=dale_chall_file
     )
     return filter_obj.filter(text)
-
