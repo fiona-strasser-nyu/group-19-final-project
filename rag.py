@@ -15,6 +15,7 @@ import torch
 import time
 from pathlib import Path
 from sklearn.metrics.pairwise import cosine_similarity
+from output_filter import OutputFilter
 
 class KidsRAG:
   def __init__(self,
@@ -192,3 +193,27 @@ class KidsRAG:
     top_indices = sims.argsort()[-top_k:][::-1]
 
     return df.iloc[top_indices].copy()
+  
+  def filter_passages(self, passages_df=None, text_column='passage', toxic_threshold=0.2, topic_threshold=0.6, dale_chall_file='dale_chall_words.txt'):
+    if passages_df is None:
+      passages_df = self.passages_df
+    if passages_df is None:
+      raise RuntimeError("No passages to filter. Prepare or load passages first.")
+  
+    # initialize filter
+    filter_obj = OutputFilter(
+      toxic_threshold=toxic_threshold,
+      topic_threshold=topic_threshold,
+      dale_chall_file=dale_chall_file
+    )
+
+    # apply filter to passages
+    keep_rows = []
+    for idx, row in passages_df.iterrows():
+      text = row[text_column]
+      result = filter_obj.filter(text)
+      if not result['has_prohibited_topics'] and not result['is_toxic']:
+        keep_rows.append(idx)
+    
+    filtered_df = passages_df.loc[keep_rows].reset_index(drop=True)
+    return filtered_df

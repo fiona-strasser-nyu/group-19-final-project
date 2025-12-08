@@ -51,7 +51,6 @@ class LibrAIrianAgent:
 
     # create a graph builder to set nodes and edges using our messages state
     # modeled this after the example from lab 7
-
     graph_builder = StateGraph(ChildMessagesState)
 
     # add nodes, and give them the same name
@@ -61,6 +60,7 @@ class LibrAIrianAgent:
     graph_builder.add_node("check_exchange_count", self.check_exchange_count)
     graph_builder.add_node("check_query_type", self.check_query_type)
     graph_builder.add_node("retrieve_passages_node", self.retrieve_passages_node)
+    graph_builder.add_node("filter_retrieved_passages", self.filter_retrieved_passages)
     graph_builder.add_node("generate_response", self.generate_response)
     graph_builder.add_node("check_answer_safety", self.check_answer_safety)
 
@@ -75,7 +75,8 @@ class LibrAIrianAgent:
     {"unsafe":END,"safe":"check_exchange_count"})
     graph_builder.add_edge("check_exchange_count", "check_query_type")
     graph_builder.add_edge("check_query_type", "retrieve_passages_node")
-    graph_builder.add_edge("retrieve_passages_node", "generate_response")
+    graph_builder.add_edge("retrieve_passages_node", "filter_retrieved_passages")
+    graph_builder.add_edge("filter_retrieved_passages", "generate_response")
     graph_builder.add_edge("generate_response", "check_answer_safety")
     graph_builder.add_edge("check_answer_safety", END)
 
@@ -175,6 +176,13 @@ class LibrAIrianAgent:
     state['retrieve_passages'] = results
 
     return {'retrieve_passages':results}
+
+  # filter retrieved passages
+  
+  def filter_retrieved_passages(self, state: ChildMessagesState):
+    filtered = self.rag.filter_passages(state['retrieve_passages'])
+    state['retrieve_passages'] = filtered
+    return {'retrieve_passages': filtered}
 
   # generate response
 
