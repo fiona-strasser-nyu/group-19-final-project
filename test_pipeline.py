@@ -4,19 +4,31 @@ from output_filter import OutputFilter
 from input_filter import InputFilter
 from llm import LLM
 
+# Initialize RAG
 rag = KidsRAG(
-    data_path = "data/cleaned_merged_fairy_tales_without_eos.txt",
-    passage_size = 120,
-    model_name = "all-MiniLM-L6-v2",
-    output_dir = "output_data"
+    data_path="data/cleaned_merged_fairy_tales_without_eos.txt",
+    passage_size=120,
+    model_name="all-MiniLM-L6-v2",
+    output_dir="output_data"
 )
 
-rag.prepare_data()
+# Lowercase approved titles for matching
+rag.approved_titles = [t.lower() for t in rag.approved_titles]
+print("Approved titles (normalized):", rag.approved_titles)
 
-# debug
+# Read raw text from file
+with open(rag.data_path, "r", encoding="utf-8") as f:
+    raw_text = f.read()
 
-print(rag.passages_df.head())
-print(rag.passages_df.columns)
+# Chunk data
+df = rag.chunk_data(raw_text)
+
+# Show what we got
+print("Passages DataFrame head:")
+print(df.head())
+print("Passages DataFrame columns:")
+print(df.columns)
+print("Number of passages:", len(df))
 
 # llm = LLM()
 
