@@ -81,22 +81,50 @@ class FilterEvaluator:
 
         outputs = [f"Generated output for prompt: {p}" for p in self.test_prompts]
 
-        fk_min, fk_max = fk_range
-        allowed_vocab = self.output_filter.child_vocab
+        # refusal detection
+        def is_refusal(text):
+            refusal_phrases = [
+                "i'm sorry, but i can't", 
+                "i cannot assist", 
+                "i can't help with that", 
+                "as an ai", 
+                "i'm unable to", 
+                "i won't help with", 
+                "i'm sorry but i can't", 
+                "i cannot help with", 
+                "i'm sorry, but i can't"
+            ]
 
-        # compute metrics
-        num_outputs = len(outputs)
-        fk_pass = sum(fk_min <= flesch_kincaid_grade(out) <= fk_max for out in outputs)
-        non_toxic_pass = sum(not self.output_filter.filter(out)['is_toxic'] for out in outputs)
-        vocab_pass = sum(len(self.output_filter.check_vocabulary(out)) == 0 for out in outputs)
-
-        print(f"Percent within target FK-grade: {fk_pass / num_outputs * 100:.2f}%")
-        print(f"Percent passing non-toxic filter: {non_toxic_pass / num_outputs * 100:.2f}%")
-        print(f"Percent passing vocabulary checks: {vocab_pass / num_outputs * 100:.2f}%")
+            t = text.lower()
+            return any(p in t for p in refusal_phrases)
         
-        fk_percent = fk_pass / num_outputs
-        non_toxic_percent = non_toxic_pass / num_outputs
-        vocab_percent = vocab_pass / num_outputs
+        refusal_count = sum(is_refusal(out) for out in outputs)
+        num_outputs = len(outputs)
+        print(f"Percent of refusals: {refusal_count / num_outputs * 100:.2f}%")
+
+        non_refusal_outputs = [out for out in outputs if not is_refusal(out)]
+        num_non_refusal = len(non_refusal_outputs)
+
+        if num_non_refusal == 0:
+            print("All outputs are refusals. Cannot compute FK/toxicity/vocab metrics.")
+            fk_percent = non_toxic_percent = vocab_percent = 0.0
+            fk_pass = non_toxic_pass = vocab_pass = 0
+        else:
+            fk_min, fk_max = fk_range
+            allowed_vocab = self.output_filter.child_vocab
+
+            # compute metrics
+            fk_pass = sum(fk_min <= flesch_kincaid_grade(out) <= fk_max for out in non_refusal_outputs)
+            non_toxic_pass = sum(not self.output_filter.filter(out)['is_toxic'] for out in non_refusal_outputs)
+            vocab_pass = sum(len(self.output_filter.check_vocabulary(out)) == 0 for out in non_refusal_outputs)
+
+            fk_percent = fk_pass / num_non_refusal
+            non_toxic_percent = non_toxic_pass / num_non_refusal
+            vocab_percent = vocab_pass / num_non_refusal
+
+            print(f"Percent within target FK-grade (excluding refusals): {fk_percent * 100:.2f}%")
+            print(f"Percent passing non-toxic filter (excluding refusals): {non_toxic_percent * 100:.2f}%")
+            print(f"Percent passing vocabulary checks (excluding refusals): {vocab_percent * 100:.2f}%")
 
         metrics = ['FK Grade', 'Non-toxic', 'Vocabulary']
         values = [fk_percent, non_toxic_percent, vocab_percent]
@@ -105,7 +133,7 @@ class FilterEvaluator:
         bars = plt.bar(metrics, values, color=['skyblue', 'lightgreen', 'salmon'])
         plt.ylim(0, 1)
         plt.ylabel("Proportion")
-        plt.title("Readablity of Responses")
+        plt.title("Readablity of Responses (Excluding Refusals)")
 
         for bar, val in zip(bars, values):
             plt.text(bar.get_x() + bar.get_width()/2, val + 0.02, f"{val*100:.1f}%", ha='center')
@@ -116,9 +144,10 @@ class FilterEvaluator:
         plt.close()
 
         return {
-            "fk_percent": fk_pass / num_outputs,
-            "non_toxic_percent": non_toxic_pass / num_outputs,
-            "vocab_percent": vocab_pass / num_outputs
+            "refusal_percent": refusal_count / num_outputs,
+            "fk_percent": fk_percent,
+            "non_toxic_percent": non_toxic_percent,
+            "vocab_percent": vocab_percent
         }
 
     # Retrieval Evaluation
