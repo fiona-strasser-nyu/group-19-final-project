@@ -94,6 +94,27 @@ class FilterEvaluator:
         print(f"Percent passing non-toxic filter: {non_toxic_pass / num_outputs * 100:.2f}%")
         print(f"Percent passing vocabulary checks: {vocab_pass / num_outputs * 100:.2f}%")
         
+        fk_percent = fk_pass / num_outputs
+        non_toxic_percent = non_toxic_pass / num_outputs
+        vocab_percent = vocab_pass / num_outputs
+
+        metrics = ['FK Grade', 'Non-toxic', 'Vocabulary']
+        values = [fk_percent, non_toxic_percent, vocab_percent]
+
+        plt.figure(figsize=(6,4))
+        bars = plt.bar(metrics, values, color=['skyblue', 'lightgreen', 'salmon'])
+        plt.ylim(0, 1)
+        plt.ylabel("Proportion")
+        plt.title("Readablity of Responses")
+
+        for bar, val in zip(bars, values):
+            plt.text(bar.get_x() + bar.get_width()/2, val + 0.02, f"{val*100:.1f}%", ha='center')
+
+        plt.tight_layout()
+        plt.savefig("output_filter_metrics.png")
+        print("Bar graph saved as output_filter_metrics.png")
+        plt.close()
+
         return {
             "fk_percent": fk_pass / num_outputs,
             "non_toxic_percent": non_toxic_pass / num_outputs,
