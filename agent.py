@@ -186,7 +186,7 @@ class LibrAIrianAgent:
   # filter retrieved passages
   
   def filter_retrieved_passages(self, state: ChildMessagesState):
-    filtered = self.rag.filter_passages(state['retrieve_passages'])
+    filtered = self.rag.filter_passages(state['retrieve_passages'], filter_obj=self.filter_output)
     if filtered.empty == True:
         final_output = "I'm sorry, the passages I found to answer that question were not safe. Please try a different question."
         

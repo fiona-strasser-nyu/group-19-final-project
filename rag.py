@@ -224,18 +224,19 @@ class KidsRAG:
 
     return df.iloc[top_indices].copy()
   
-  def filter_passages(self, passages_df=None, text_column='passage', toxic_threshold=0.2, topic_threshold=0.6, dale_chall_file='dale_chall_words.txt'):
+  def filter_passages(self, passages_df=None, text_column='passage',filter_obj=None, toxic_threshold=0.2, topic_threshold=0.6, dale_chall_file='dale_chall_words.txt'):
     if passages_df is None:
       passages_df = self.passages_df
     if passages_df is None:
       raise RuntimeError("No passages to filter. Prepare or load passages first.")
   
-    # initialize filter
-    filter_obj = OutputFilter(
-      toxic_threshold=toxic_threshold,
-      topic_threshold=topic_threshold,
-      dale_chall_file=dale_chall_file
-    )
+    if filter_obj is None:
+        # initialize filter
+        filter_obj = OutputFilter(
+          toxic_threshold=toxic_threshold,
+          topic_threshold=topic_threshold,
+          dale_chall_file=dale_chall_file
+        )
 
     # apply filter to passages
     keep_rows = []
