@@ -16,6 +16,7 @@ In data, we have the dataset used for our RAG and the list of titles.
 In the main repository, we have four main files holding the classes that define our model: rag.py, llm.py, input_safety.py, output_safety.py, and agent.py. These are the files needed to createa our model. To run our streamlit UI, use app.py
 
 **Tutorial:** To run the streamlit app from colab:
+
 '''
 from google.colab import drive
 drive.mount('/content/drive')
