@@ -17,7 +17,7 @@ In the main repository, we have four main files holding the classes that define 
 
 **Tutorial:** To run the streamlit app from colab:
 
-'''
+```
 from google.colab import drive
 drive.mount('/content/drive')
 
@@ -39,8 +39,9 @@ ngrok.kill()
 
 public_url = ngrok.connect((8501))
 print("Ngrok URL:", public_url)
-'''
+```
+
 
 Otherwise, to run the app in the terminal, make sure you have installed streamlit and are in the directory containing the necessary data and files. Then run:
 
-'streamlit run my_app.py'
+`streamlit run my_app.py`
