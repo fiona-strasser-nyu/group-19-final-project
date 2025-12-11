@@ -35,10 +35,8 @@ ngrok.set_auth_token(NGROK_AUTH_TOKEN)
 
 ngrok.kill()
 
-# Start streamlit in background AND redirect logs to notebook
 !streamlit run app.py --server.port 8501 --server.address 0.0.0.0 > streamlit.log 2>&1 &
 
-# Get public URL
 public_url = ngrok.connect((8501))
 print("Ngrok URL:", public_url)
 '''
