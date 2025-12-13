@@ -17,27 +17,33 @@ from pathlib import Path
 from sklearn.metrics.pairwise import cosine_similarity
 from output_filter import OutputFilter
 
+# Retrieval Augmented Generation / RAG class for children's story content
 class KidsRAG:
-  def __init__(self,
-               data_path,
-               passage_size,
+  def __init__(self, # initialize KidsRAG pipeline
+               data_path, # path to raw text file containing story data
+               passage_size, # number of words per passage chunk
                embed_batch_size=128,
                model_name="all-MiniLM-L6-v2",
-               output_dir="./output_data",
+               output_dir="./output_data", # directory used to cache embeddings and passages
                datacard_titles_path=None):
 
     self.data_path = Path(data_path)
     self.passage_size = passage_size
+    # name of SentenceTransformer model
     self.model_name = model_name
+    # directory for saving passages and embeddings
     self.output_dir = Path(output_dir)
     self.output_dir.mkdir(parents=True, exist_ok=True)
 
+    # select device for embedding computation
     self.device = "cuda" if torch.cuda.is_available() else "cpu"
     print("Using device", self.device)
 
     self.embed_batch_size = embed_batch_size
+    # sentence embedding model used for passage and query embeddings
     self.embed_model = SentenceTransformer(model_name)
 
+    # DataFrame containing passage text and metadata
     self.passages_df = None
     self.embeddings = None
     
@@ -45,10 +51,15 @@ class KidsRAG:
 
   def load_data(self):
     # try to split into candidate stories
+    # load raw story data
     with open(self.data_path, "r", encoding="utf-8", errors="replace") as fh:
       return fh.read()
       
   def load_approved_titles(self, path):
+    """
+    Load and normalize list of approved story titles.
+    Allows restricting of corpus to predefined set of stories
+    """
     if path is None:
         return None
     
@@ -67,6 +78,7 @@ class KidsRAG:
     
 
   def _passage_text(self, text):
+    """Split block of text into word passages with a fixed size"""
     words = text.split()
 
     passages = []
@@ -79,7 +91,9 @@ class KidsRAG:
 
   def chunk_data(self, text):
     # adapted from ada's milestone 3 file:
-    # split text data
+    """
+    Parse raw text into stories, then chunk each story into passages
+    """
     sections = text.split("\n\n")
     
     titles = []
@@ -145,10 +159,12 @@ class KidsRAG:
     return passages_df
 
   def embed_passages(self, passages_df):
+    """
+    Compute embeddings for all passages using batching
+    """
     passages = passages_df['passage'].tolist()
     total_passages = len(passages)
-
-    # compute embeddings with batching
+    
     batch_size = self.embed_batch_size
     embeddings = []
 
@@ -170,13 +186,14 @@ class KidsRAG:
     return embeddings
 
   def save_results(self):
-    # save final embeddings
+    """Save passages and embeddings to disk for reuse"""
     if  self.passages_df is None or self.embeddings is None:
       raise RuntimeError("RAG passages not prepared for saving. Try calling rag.prepare_data().")
     np.save(self.output_dir / "embeddings.npy", self.embeddings)
     self.passages_df.to_pickle(self.output_dir / "passages.pkl")
 
   def load_saved_passages(self):
+    """Load cached passages"""
     passages_path = self.output_dir / "passages.pkl"
     if passages_path.exists():
       self.passages_df = pd.read_pickle(passages_path)
@@ -186,6 +203,7 @@ class KidsRAG:
     return False
 
   def load_saved_embeddings(self):
+    """Load cached embeddings"""
     embeddings_path = self.output_dir / "embeddings.npy"
 
     if embeddings_path.exists():
@@ -196,6 +214,9 @@ class KidsRAG:
     return False
 
   def prepare_data(self):
+    """
+    Prepare passages and embeddings, using cached data if possible
+    """
     passages_loaded = self.load_saved_passages()
     embeddings_loaded = self.load_saved_embeddings()
     if passages_loaded and embeddings_loaded:
@@ -208,6 +229,9 @@ class KidsRAG:
     self.save_results()
 
   def retrieve_passages(self, query, top_k=3, subset_df=None, subset_embeddings=None):
+    """
+    Retrieve the top k most similar passages for given query
+    """
     if subset_df is not None and subset_embeddings is not None:
       df = subset_df
       embeddings = subset_embeddings
@@ -225,6 +249,9 @@ class KidsRAG:
     return df.iloc[top_indices].copy()
   
   def filter_passages(self, passages_df=None, text_column='passage',filter_obj=None, toxic_threshold=0.2, topic_threshold=0.6, dale_chall_file='dale_chall_words.txt'):
+    """
+    Apply output safety filters to remove unsafe passages
+    """
     if passages_df is None:
       passages_df = self.passages_df
     if passages_df is None:
