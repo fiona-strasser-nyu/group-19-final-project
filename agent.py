@@ -58,14 +58,23 @@ class LibrAIrianAgent:
     graph_builder = StateGraph(ChildMessagesState)
 
     # add nodes, and give them the same name
+    # get story title
     graph_builder.add_node("get_story_title", self.get_story_title)
+    # get user input
     graph_builder.add_node("get_user_input", self.get_user_input)
+    # pass user input through the input safety filter check
     graph_builder.add_node("check_input_safety", self.check_input_safety)
+    # check number of turns that user had already taken before generating output
     graph_builder.add_node("check_exchange_count", self.check_exchange_count)
+    # call existing RAG function using query
     graph_builder.add_node("check_query_type", self.check_query_type)
+    # use existing RAG function to retrieve passages
     graph_builder.add_node("retrieve_passages_node", self.retrieve_passages_node)
+    # do internal filter of these passages to make sure that they are safe enough for children
     graph_builder.add_node("filter_retrieved_passages", self.filter_retrieved_passages)
+    # generate response 
     graph_builder.add_node("generate_response", self.generate_response)
+    # pass generated output through output safety filtering layer
     graph_builder.add_node("check_answer_safety", self.check_answer_safety)
 
     # add edges between subsequent pieces of the pipeline
@@ -97,7 +106,6 @@ class LibrAIrianAgent:
     return {"story_title":normalized_title}
 
   # get user input
-
   def get_user_input(self, state: ChildMessagesState):
     user_input = state['user_query'].strip().lower()
     
