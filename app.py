@@ -23,6 +23,7 @@ knowledge about, take a look at the sidebar.
 Have fun! Keep reading!
 """)
 
+# OpenAI API Key Handling
 api_key = os.getenv("OPENAI_API_KEY")
 if not api_key:
   api_key = st.text_input("Enter your OpenAI API key", type="password")
@@ -31,6 +32,10 @@ if not api_key:
 
 @st.cache_resource(show_spinner=True)
 def load_rag():
+  """
+  Initialize the KidsRAG object.
+  Loads and prepares fairytale passages for retrieval.
+  """
   rag = KidsRAG(
         data_path = "data/cleaned_merged_fairy_tales_without_eos.txt",
         passage_size = 120,
@@ -60,6 +65,7 @@ if not rag_loaded:
 if rag_loaded == False:
   st.stop()
 
+# load safety filter, llm, and agent
 with st.sidebar:
   st.header("Reference Texts in this Library")
 
@@ -70,10 +76,12 @@ with st.sidebar:
 
 @st.cache_resource(show_spinner=True)
 def load_input_filter():
+  """Load input safety filter"""
   return InputFilter(threshold = 0.2)
 
 @st.cache_resource(show_spinner=True)
 def load_output_filter():
+  """Load output safety filter"""
   output_filter = OutputFilter(
       toxic_threshold = 0.2,
       topic_threshold = 0.6,
@@ -83,6 +91,7 @@ def load_output_filter():
 
 @st.cache_resource(show_spinner=True)
 def load_llm(api_key):
+  """Initialize the LLM wrapper"""
   llm = LLM(
     model = "gpt-4o-mini",
     max_tokens = 300,
@@ -94,6 +103,7 @@ def load_llm(api_key):
 
 @st.cache_resource(show_spinner=True)
 def load_agent(_rag, _llm, _input_filter, _output_filter):
+  """Create and cache LibrAIrian agent"""
   agent = LibrAIrianAgent(
       rag = _rag,
       llm = _llm,
@@ -109,6 +119,7 @@ output_filter = load_output_filter()
 llm = load_llm(api_key)
 agent = load_agent(rag, llm, input_filter, output_filter)
 
+# initialize session states
 if "messages" not in st.session_state:
   st.session_state.messages = []
 if "turn_count" not in st.session_state:
@@ -118,6 +129,7 @@ if "story_title" not in st.session_state:
 if "user_query" not in st.session_state:
   st.session_state.user_query = ""
 
+# user inputs
 story_title = st.text_input(
     "What story are you asking about? (Type 'general' if it is a general question):",
     st.session_state.story_title
@@ -126,6 +138,10 @@ story_title = st.text_input(
 st.session_state.story_title = story_title
 
 def ask_question():
+  """
+  Send user's query through LibrAIrian agent
+  and update session state with the response
+  """
   user_query = st.session_state.input_box
 
   state = ChildMessagesState(
@@ -152,6 +168,7 @@ if st.button("Ask"):
   ask_question()
   st.rerun()
 
+# display chat
 # AI disclaimer: used it to figure out how to format with this appearance
 for msg in st.session_state.messages:
   if msg["role"] == 'user':
