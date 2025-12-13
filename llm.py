@@ -11,19 +11,22 @@ from typing import List, Dict
 from openai import OpenAI
 import pandas as pd
 
+# Wrapper class for interacting with  OpenAI chat language model.
 class LLM:
   def __init__(self,
-               model = "gpt-4o-mini",
-               temperature = 0.7,
-               max_tokens = 300,
+               model = "gpt-4o-mini", # name of OpenAI model to use
+               temperature = 0.7, # temperature for controlling response creativity
+               max_tokens = 300, # maximum number of tokens allowed in generated response
                api_key = None):
 
     self.model = model
     self.temperature = temperature
     self.max_tokens = max_tokens
 
+    # OpenAI API client used to send chat completion requests
     self.client = OpenAI(api_key=api_key)
 
+    # System prompt defining assistant's role, tone, and constraints
     self.prompt = f"""
         You are a friendly reading assistant for children ages 6 to 10.
         Use the passages below to answer the child's question.
@@ -31,19 +34,31 @@ class LLM:
         """
 
   def ask_gpt(self, query, retrieved_passages, message_history, query_type_disclaimer):
+    """
+    Generate response to a child's question using retrieved context
+    query: child's current question
+    retrieved_passages: DataFrame containing retrieved text passages
+    message_history: previous conversation messages in OpenAI chat
+    query_type_disclaimer: disclaimer prepended to final output
+    """
+    # initialize message history if nothing is provided
     if message_history is None:
       message_history = []
 
+    # extract retrieved context text
     if isinstance(retrieved_passages, pd.DataFrame) and not retrieved_passages.empty:
       context_text = "\n\n".join(retrieved_passages['passage'].tolist())
 
     else:
         context_text = "No relevant passages found."
 
+    # start message list with system prompt
     messages = [{"role":"system", "content": self.prompt}]
 
+    # include only most recent conversation turns
     messages.extend(message_history[-5:])
 
+    # construct user query with context
     recent_query = f"""
   Passages:
   {context_text}
@@ -65,10 +80,9 @@ class LLM:
 
     # extract and return text
     response_text = response.choices[0].message.content.strip()
-    final_output = f"""{query_type_disclaimer}
+    final_output = f"""{query_type_disclaimer} # format final output with disclaimer
 
     LibrAIrian says:
     {response_text}
     """
-
     return final_output
