@@ -47,10 +47,14 @@ class ChildMessagesState(TypedDict):
 
 class LibrAIrianAgent:
   def __init__(self, rag, llm, input_filter, output_filter, max_turns=10):
+    # rag system with attributes
     self.rag = rag
+    # llm wrapper
     self.llm = llm
+    # safety filters for user input and generated responses
     self.filter_input = input_filter
     self.filter_output = output_filter
+    # maximum allowed conversation turns
     self.max_turns = max_turns
 
     # create a graph builder to set nodes and edges using our messages state
@@ -99,6 +103,10 @@ class LibrAIrianAgent:
 
   # get user title
   def get_story_title(self, state: ChildMessagesState):
+    """
+    Normalize provided story title by lowercasing and stripping
+    punctuation and special characters.
+    """
     user_story_title = state['story_title'].strip()
     story_title_text = user_story_title.strip('".!?')
     normalized_title = re.sub(r"[^a-z0-9 ]", "", story_title_text.lower())
@@ -107,6 +115,10 @@ class LibrAIrianAgent:
 
   # get user input
   def get_user_input(self, state: ChildMessagesState):
+    """
+    Process user input, handle quit command, increment turn count,
+    and append input to conversation history
+    """
     user_input = state['user_query'].strip().lower()
     
     if user_input == "quit":
@@ -127,6 +139,10 @@ class LibrAIrianAgent:
   # check question safety --> use function from Mia's safety filtering section
 
   def check_input_safety(self, state: ChildMessagesState):
+    """
+    Validate user input using input safety filter.
+    Unsafe input immediately terminates conversation
+    """
     user_input = state['user_query']
 
     # use safety filtering to check if input is safe
@@ -145,6 +161,7 @@ class LibrAIrianAgent:
 
   def check_query_type(self, state: ChildMessagesState):
     # check the kind of query the user is passing
+    # if query is referring to known or unknown, or general question
     # 0 is a query on a specific title in database
     # 1 is a query on a specific title not in database
     # 2 is a general query
@@ -163,7 +180,7 @@ class LibrAIrianAgent:
   # within certain time period? TODO
 
   def check_exchange_count(self, state: ChildMessagesState):
-
+    # enforce maximum number of exchanges
     # if we have reached limit, return safe message as final output
     if state['turn_count'] >= 10:
       final_output = "It was great talking to you! However, your librAIrian \
@@ -180,6 +197,7 @@ class LibrAIrianAgent:
 
   def retrieve_passages_node(self, state: ChildMessagesState):
     # using rag to retrieve passages
+    # restricts retrieval to a specific title when applicable
     if state['query_type'] == 0:
       df = self.rag.passages_df[self.rag.passages_df['title'] == state['story_title']]
       embeddings = self.rag.embeddings[df.index]
@@ -194,6 +212,9 @@ class LibrAIrianAgent:
   # filter retrieved passages
   
   def filter_retrieved_passages(self, state: ChildMessagesState):
+    """
+    Apply output safety filtering to retrieved passages
+    """
     filtered = self.rag.filter_passages(state['retrieve_passages'], filter_obj=self.filter_output)
     if filtered.empty == True:
         final_output = "I'm sorry, the passages I found to answer that question were not safe. Please try a different question."
@@ -231,6 +252,7 @@ class LibrAIrianAgent:
     elif state["query_type"] == 2:
        query_type_disclaimer = "Answering general query based on related stories..."
 
+    # generate response using llm, including retrieved passages and disclaimer
     response = self.llm.ask_gpt(
         state['user_query'],
         state['retrieve_passages'],
@@ -301,7 +323,7 @@ class LibrAIrianAgent:
     # initialize state object
       state = ChildMessagesState(
           story_title="general",
-          user_query=user_query,
+          user_query=user_query, # user's input question
           messages=[],
           retrieve_passages=None,
           response="",
@@ -315,5 +337,5 @@ class LibrAIrianAgent:
       # generate response by invoking the graph we built
       output = self.graph.invoke(state)
 
-      # return the final result
+      # return the final result shown to user
       return output['final_output']
