@@ -57,7 +57,8 @@ def load_rag():
         data_path = "data/cleaned_merged_fairy_tales_without_eos.txt",
         passage_size = 120,
         model_name = "all-MiniLM-L6-v2",
-        output_dir = "output_data"
+        output_dir = "output_data",
+        datacard_titles_path="data/datacard_titles.txt"
     )
   return rag
 
