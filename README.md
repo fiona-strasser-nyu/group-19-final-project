@@ -51,7 +51,7 @@ cd /[your path to the project]
 
 pip install -r requirements.txt
 
-streamlit run my_app.py
+streamlit run app.py
 ```
 Once the streamlit is open, you will be prompted to enter your OpenAI API key.
 
