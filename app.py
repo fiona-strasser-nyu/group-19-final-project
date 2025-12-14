@@ -1,3 +1,16 @@
+# app.py
+
+# This file defines the Streamlit application for Project LibrAIrian, which is the interactive interface.
+# This child reading assistant allows users to ask safe, guided questions about stories using a
+# retrieval-augmented generation (RAG) pipeline.
+
+# The application
+# 1. Loads and caches RAG, LLM, safety filters
+# 2. Handles OpenAI API key input
+# 3. Manages user interaction and session state
+# 4. Sends user queries to the LibrAIrian agent
+# 5. Displays a chat style interface for responses
+
 import streamlit as st
 from input_filter import InputFilter
 from output_filter import OutputFilter
@@ -6,21 +19,6 @@ from llm import LLM
 from agent import LibrAIrianAgent, ChildMessagesState
 import os
 from pathlib import Path
-
-"""
-app.py
-
-This file defines the Streamlit application for Project LibrAIrian, which is the interactive interface.
-This child reading assistant allows users to ask safe, guided questions about stories using a
-retrieval-augmented generation (RAG) pipeline.
-
-The application
-1. Loads and caches RAG, LLM, safety filters
-2. Handles OpenAI API key input
-3. Manages user interaction and session state
-4. Sends user queries to the LibrAIrian agent
-5. Displays a chat style interface for responses
-"""
 
 st.title("LibAIrian Resource Center")
 
