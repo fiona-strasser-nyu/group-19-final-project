@@ -7,6 +7,21 @@ from agent import LibrAIrianAgent, ChildMessagesState
 import os
 from pathlib import Path
 
+"""
+app.py
+
+This file defines the Streamlit application for Project LibrAIrian, which is the interactive interface.
+This child reading assistant allows users to ask safe, guided questions about stories using a
+retrieval-augmented generation (RAG) pipeline.
+
+The application
+1. Loads and caches RAG, LLM, safety filters
+2. Handles OpenAI API key input
+3. Manages user interaction and session state
+4. Sends user queries to the LibrAIrian agent
+5. Displays a chat style interface for responses
+"""
+
 st.title("LibAIrian Resource Center")
 
 st.markdown("""
@@ -33,8 +48,12 @@ if not api_key:
 @st.cache_resource(show_spinner=True)
 def load_rag():
   """
-  Initialize the KidsRAG object.
-  Loads and prepares fairytale passages for retrieval.
+    Initialize and return a KidsRAG object
+
+    This function loads and prepares the fairy tale dataset used for RAG.
+
+    Returns:
+        KidsRAG: An initialized RAG object for passage retrieval.
   """
   rag = KidsRAG(
         data_path = "data/cleaned_merged_fairy_tales_without_eos.txt",
@@ -76,12 +95,26 @@ with st.sidebar:
 
 @st.cache_resource(show_spinner=True)
 def load_input_filter():
-  """Load input safety filter"""
+  """
+    Loads and returns the input safety filter.
+
+    This filter checks whether user queries are appropriate and safe for children.
+
+    Returns:
+        InputFilter: Initialized input safety filter
+  """
   return InputFilter(threshold = 0.2)
 
 @st.cache_resource(show_spinner=True)
 def load_output_filter():
-  """Load output safety filter"""
+  """
+    Load and return the output safety filter.
+
+    This filter evaluates LLM-generated responses for toxicity, inappropriate topics, and reading level suitability.
+
+    Returns:
+        OutputFilter: Initialized output safety filter
+  """
   output_filter = OutputFilter(
       toxic_threshold = 0.2,
       topic_threshold = 0.6,
@@ -91,7 +124,14 @@ def load_output_filter():
 
 @st.cache_resource(show_spinner=True)
 def load_llm(api_key):
-  """Initialize the LLM wrapper"""
+  """
+    Initializes and returns the LLM wrapper.
+
+    Args: api_key (str), OpenAI API key.
+
+    Returns:
+        LLM: Initialized language model interface
+  """
   llm = LLM(
     model = "gpt-4o-mini",
     max_tokens = 300,
@@ -103,7 +143,20 @@ def load_llm(api_key):
 
 @st.cache_resource(show_spinner=True)
 def load_agent(_rag, _llm, _input_filter, _output_filter):
-  """Create and cache LibrAIrian agent"""
+  """
+    Create and return a cached agent
+
+    This agent coordinates the RAG pipeline, LLM calls, safety filtering, and conversation flow using LangGraph.
+
+    Args:
+        _rag (KidsRAG): RAG system for passage retrieval
+        _llm (LLM): Language model wrapper
+        _input_filter (InputFilter): User input safety filter
+        _output_filter (OutputFilter): Output safety filter
+
+    Returns:
+        LibrAIrianAgent: Initialized conversational agent.
+  """
   agent = LibrAIrianAgent(
       rag = _rag,
       llm = _llm,
@@ -139,8 +192,11 @@ st.session_state.story_title = story_title
 
 def ask_question():
   """
-  Send user's query through LibrAIrian agent
-  and update session state with the response
+    Send the user's query through the LibrAIrian agent and update the Streamlit session state with the response.
+
+    This function constructs a ChildMessagesState object, 
+    invokes the LangGraph agent, and then stores the resulting
+    messages and turn count so the conversation can continue
   """
   user_query = st.session_state.input_box
 
