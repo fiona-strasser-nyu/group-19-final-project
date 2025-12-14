@@ -15,6 +15,8 @@ In data, we have the dataset used for our RAG and the list of titles.
 
 In the main repository, we have four main files holding the classes that define our model: rag.py, llm.py, input_safety.py, output_safety.py, and agent.py. These are the files needed to createa our model. To run our streamlit UI, use app.py
 
+We also have two files that were used for testing: evalute_filter.py, which defines the process of going through the safety filters, and test_pipeline, which actually uses this to evalutate our safety filtering quality.
+
 **Tutorial:** To run the streamlit app from colab:
 
 ```
