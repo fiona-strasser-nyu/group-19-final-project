@@ -1,4 +1,16 @@
 # -*- coding: utf-8 -*-
+"""
+
+This file defines the FilterEvaluator class, which is responsible for
+evaluating LibrAIrian's safety filters, retrieval quality, and latency
+characteristics.
+
+The evaluation includes
+1. Input safety filter performance
+2. Output safety and readability metrics
+3. Retrieval precision and recall using embeddings
+4. Simulated response latency measurements
+"""
 import pandas as pd
 import numpy as np
 import seaborn as sns
@@ -16,12 +28,27 @@ from output_filter import OutputFilter
 
 class FilterEvaluator:
     """
-    Evaluation for LibrAIrian's safety filters, retrieval system, and latency characteristics.
+    Evaluation framework for LibrAIrian's safety filters, retrieval system, and latency characteristics.
+
+    This class provides methods to assess
+    - Input safety detection performance
+    - Output readability, toxicity, and vocabulary suitability
+    - Retrieval accuracy using embedding similarity
+    - Latency behavior
     """
     def __init__(self, input_threshold=0.2, toxic_threshold=0.2, topic_threshold=0.6, 
                  dale_chall_file='dale_chall_words.txt', embedding_model_name='all-MiniLM-L6-v2'):
         
-        # initialize filters
+        """
+        Initialize safety filters and embedding model for evaluation.
+
+        Args:
+            input_threshold (float): Threshold for input safety classification
+            toxic_threshold (float): Toxicity threshold for output filtering
+            topic_threshold (float): Threshold for topic appropriateness 
+            dale_chall_file (str): Path to Dale–Chall vocab list
+            embedding_model_name (str): SentenceTransformer model name
+        """
         self.input_filter = InputFilter(threshold=input_threshold)
         self.output_filter = OutputFilter(
             toxic_threshold=toxic_threshold,
@@ -37,8 +64,14 @@ class FilterEvaluator:
     # Input Filter Evaluation
     def evaluate_input_filter(self, test_data):
         """
-        test_data: list of dicts, each dict has keys 'prompt' and 'label' (0=safe, 1=unsafe)
-        returns dict, which is dictionary with sensitivity, specificity, accuracy, and confusion matrix
+        Evaluate the input safety filter using labeled test prompts
+
+        Args:
+            test_data (list of dict), with each dictionary containing
+                - 'prompt': input text
+                - 'label': 0 for safe, 1 for unsafe
+        Returns:
+            dict: Dictionary containing sensitivity, specificity, accuracy, and confusion matrix
         """
         df = pd.DataFrame(test_data)
         # run predictions
@@ -76,9 +109,15 @@ class FilterEvaluator:
     # Output Filter Evaluation
     def evaluate_output_filter(self, text_path, num_samples=100, fk_range=(3,5)):
         """
-        text_path: path to text file containing prompts
-        num_samples: number of prompts to sample for evaluation
-        fk_range: tuple (min_grade, max_grade), gives acceptable fk range
+        Evaluate output safety, readability, and vocabulary suitability
+
+        Args:
+            text_path (str): Path to text file used to sample prompts
+            num_samples (int): Number of prompts to be evaluated
+            fk_range (tuple): Range for Flesch–Kincaid grade
+
+        Returns:
+            dict: Proportions of outputs passing refusal, readability, toxicity, and vocabulary checks.
         """
         text = Path(text_path).read_text(encoding="utf-8")
         # simple sentence splitting
@@ -162,8 +201,9 @@ class FilterEvaluator:
     # Retrieval Evaluation
     def build_embedding_store(self, prompts=None):
         """
-        Build and normalize embedding store for retrieval evaluation
-        prompts: text chunks to embed and store
+        Build and normalize embedding store for retrieval evaluation.
+        Args:
+            prompts (list of str): Text chunks to embed
         """
         if prompts is not None:
             self.test_prompts = prompts
@@ -175,6 +215,13 @@ class FilterEvaluator:
     def query_vector_store(self, query, k=3):
         """
         Retrieve the top k most similar text chunks for query
+
+        Args:
+            query (str): Query text
+            k (int): Number of results to return
+
+        Returns:
+            list of str: Retrieved text chunks
         """
         query_emb = self.embedding_model.encode([query])
         query_emb = query_emb / np.linalg.norm(query_emb, axis=1, keepdims=True)
@@ -185,6 +232,16 @@ class FilterEvaluator:
         return [self.test_prompts[i] for i in top_indices]
 
     def evaluate_retrieval(self, ground_truth, k=3):
+        """
+        Evaluate retrieval precision and recall
+
+        Args:
+            ground_truth (dict): Mapping of query for correct text chunk.
+            k (int): Number of retrieved chunks
+
+        Returns:
+            dict: Average precision and recall scores
+        """
         # compute retrieval precision and recall
         precision_scores = []
         recall_scores = []
@@ -202,9 +259,12 @@ class FilterEvaluator:
 
     # Latency Evaluation
     @staticmethod
-    def measure_latency(prompts
+    def measure_latency(prompts):
         """
-        Measure simulated generation latency statistics
+        Measure simulated generation latency statistics.
+
+        Args: prompts (list of str): Prompts used for latency simulation
+        Returns: dict, mean latency and 95th percentile latency
         """
         latencies = []
         for p in prompts:
