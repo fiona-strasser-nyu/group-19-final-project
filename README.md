@@ -43,7 +43,14 @@ public_url = ngrok.connect((8501))
 print("Ngrok URL:", public_url)
 ```
 
-
 Otherwise, to run the app in the terminal, make sure you have installed streamlit and are in the directory containing the necessary data and files. Then run:
 
 `streamlit run my_app.py`
+
+You will need an ngrok auth token to create the link. Once the streamlit is open, you will be prompted to enter your OpenAI API key.
+
+If this is your first time running the system and there are no saved embeddings, click "Generate Resources" for the RAG to load the passages and create embeddings.
+
+In the first field, enter the story title you have a question about (either in the database or not--we will check!) or "general" for a general query. Ask you query 
+in the second text box. Click "Ask" to generate a response. Keep asking questions until you reach the limit or you are done, at which point you can enter "quit" to
+end the session.
