@@ -111,6 +111,7 @@ class LLM:
     )
 
     # extract and return text
+    # format final output with disclaimer
     response_text = response.choices[0].message.content.strip()
     final_output = f"""{query_type_disclaimer}
 
