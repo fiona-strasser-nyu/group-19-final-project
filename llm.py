@@ -112,7 +112,7 @@ class LLM:
 
     # extract and return text
     response_text = response.choices[0].message.content.strip()
-    final_output = f"""{query_type_disclaimer} # format final output with disclaimer
+    final_output = f"""{query_type_disclaimer}
 
     LibrAIrian says:
     {response_text}
