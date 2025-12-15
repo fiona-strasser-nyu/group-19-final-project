@@ -42,12 +42,18 @@ ngrok.kill()
 public_url = ngrok.connect((8501))
 print("Ngrok URL:", public_url)
 ```
+You will need an ngrok auth token to create the link. Then open the generated link.
 
-Otherwise, to run the app in the terminal, make sure you have installed streamlit and are in the directory containing the necessary data and files. Then run:
+Otherwise, to run the app in the terminal, make sure you have installed streamlit. Then run:
 
-`streamlit run my_app.py`
+```
+cd /[your path to the project]
 
-You will need an ngrok auth token to create the link. Once the streamlit is open, you will be prompted to enter your OpenAI API key.
+pip install -r requirements.txt
+
+streamlit run app.py
+```
+Once the streamlit is open, you will be prompted to enter your OpenAI API key.
 
 If this is your first time running the system and there are no saved embeddings, click "Generate Resources" for the RAG to load the passages and create embeddings.
 
